@@ -6,10 +6,6 @@ const { config: webpackConfig, plugins } = config({
     debug: true
 });
 
-webpackConfig.resolve.alias = {
-    customReact: 'react'
-};
-
 module.exports = {
     ...webpackConfig,
     plugins
