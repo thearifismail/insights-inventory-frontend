@@ -8,7 +8,6 @@ import { PageHeader, PageHeaderTitle, Main } from '@redhat-cloud-services/fronte
 import { entitiesReducer } from '../store';
 import * as actions from '../actions';
 import { Grid, GridItem } from '@patternfly/react-core';
-import { asyncInventoryLoader } from '../components/inventory/AsyncInventory';
 import { getRegistry } from '@redhat-cloud-services/frontend-components-utilities/files/Registry';
 import { addNotification } from '@redhat-cloud-services/frontend-components-notifications/cjs/actions';
 import { useStore } from 'react-redux';
@@ -16,6 +15,9 @@ import DeleteModal from '../components/DeleteModal';
 import TextInputModal from '@redhat-cloud-services/frontend-components-inventory-general-info/TextInputModal';
 import flatMap from 'lodash/flatMap';
 import { defaultFilters, generateFilter } from '../Utilities/constants';
+
+import { ScalprumComponent } from '@scalprum/react-core';
+import { useHistory } from 'react-router-dom';
 
 const calculateChecked = (rows = [], selected) => (
     rows.every(({ id }) => selected && selected.has(id))
@@ -70,7 +72,6 @@ const Inventory = ({
     selected,
     status,
     setFilter,
-    history,
     source,
     filterbyName,
     tagsFilter,
@@ -79,8 +80,8 @@ const Inventory = ({
     setPagination
 }) => {
     document.title = 'Inventory | Red Hat Insights';
+    const history = useHistory();
     const inventory = useRef(null);
-    const [ConnectedInventory, setInventory] = useState();
     const [isModalOpen, handleModalToggle] = useState(false);
     const [currentSytem, activateSystem] = useState({});
     const [filters, onSetfilters] = useState([]);
@@ -92,30 +93,6 @@ const Inventory = ({
         shallowEqual
     );
     const store = useStore();
-
-    const loadInventory = async () => {
-        clearNotifications();
-        const {
-            inventoryConnector,
-            mergeWithEntities,
-            INVENTORY_ACTION_TYPES
-        } = await asyncInventoryLoader();
-        getRegistry().register({
-            ...mergeWithEntities(entitiesReducer(INVENTORY_ACTION_TYPES))
-        });
-
-        setFilter(generateFilter(status, source, tagsFilter, filterbyName));
-
-        if (perPage || page) {
-            setPagination(
-                Array.isArray(page) ? page[0] : page,
-                Array.isArray(perPage) ? perPage[0] : perPage
-            );
-        }
-
-        const { InventoryTable } = inventoryConnector(store);
-        setInventory(() => InventoryTable);
-    };
 
     const onRefresh = (options, callback) => {
         if (!options?.filters) {
@@ -170,7 +147,7 @@ const Inventory = ({
                 inventory.current.onRefreshData({});
             }
         });
-        loadInventory();
+        clearNotifications();
     }, []);
 
     const calculateSelected = () => selected ? selected.size : 0;
@@ -184,8 +161,8 @@ const Inventory = ({
                 <Grid gutter="md">
                     <GridItem span={12}>
                         {
-                            !loading && ConnectedInventory &&
-                                <ConnectedInventory
+                            !loading &&
+                                <ScalprumComponent
                                     customFilters={globalFilter}
                                     isFullView
                                     store={store}
@@ -251,6 +228,24 @@ const Inventory = ({
                                         canSelectAll: false
                                     }}
                                     onRowClick={(_e, id, app) => history.push(`/${id}${app ? `/${app}` : ''}`)}
+                                    history={history}
+                                    appName="chrome"
+                                    module="./InventoryTable"
+                                    scope="chrome"
+                                    onLoad={({ INVENTORY_ACTION_TYPES, mergeWithEntities }) => {
+                                        getRegistry().register({
+                                            ...mergeWithEntities(entitiesReducer(INVENTORY_ACTION_TYPES))
+                                        });
+
+                                        setFilter(generateFilter(status, source, tagsFilter, filterbyName));
+
+                                        if (perPage || page) {
+                                            setPagination(
+                                                Array.isArray(page) ? page[0] : page,
+                                                Array.isArray(perPage) ? perPage[0] : perPage
+                                            );
+                                        }
+                                    }}
                                 />
                         }
                     </GridItem>

@@ -8,14 +8,14 @@ import configureStore from 'redux-mock-store';
 
 import InventoryTable from './InventoryTable';
 
-import * as loader from '../components/inventory/AsyncInventory';
+import * as scalprum from '../components/inventory/AsyncInventory';
 import DeleteModal from '../components/DeleteModal';
 import { hosts } from '../api';
 import createXhrMock from '../Utilities/__mocks__/xhrMock';
 
-jest.mock('../components/inventory/AsyncInventory', () => ({
+jest.mock('@scalprum/react-core', () => ({
     __esModule: true,
-    asyncInventoryLoader: jest.fn()
+    ScalprumComponent: jest.fn()
 }));
 
 describe('InventoryTable', () => {
@@ -104,7 +104,7 @@ describe('InventoryTable', () => {
     beforeEach(() => {
         mockStore = configureStore();
 
-        jest.spyOn(loader, 'asyncInventoryLoader').mockImplementation(() => (inventory));
+        jest.spyOn(scalprum, 'ScalprumComponent').mockImplementation(() => (inventory));
     });
 
     it('renders correctly when write permissions', async () => {
