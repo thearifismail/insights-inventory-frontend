@@ -9,11 +9,18 @@ const { config: webpackConfig, plugins } = config({
     ...process.env.PROXY && {
         https: true,
         useProxy: true,
-        useCloud: true,
         proxyVerbose: true,
+        env: `${process.env.ENVIRONMENT || 'ci'}-${
+          process.env.BETA ? 'beta' : 'stable'
+        }`, // for accessing prod-beta start your app with ENVIRONMENT=prod and BETA=true
         appUrl: process.env.BETA ? '/beta/insights/inventory' : '/insights/inventory',
-        ...process.env.LOCAL_API && {
-            routes: {
+        routes: {
+            ...(process.env.CONFIG_PORT && {
+                [`${process.env.BETA ? '/beta' : ''}/config`]: {
+                    host: `http://localhost:${process.env.CONFIG_PORT}`
+                }
+            }),
+            ...process.env.LOCAL_API && {
                 ...(process.env.LOCAL_API.split(',') || []).reduce((acc, curr) => {
                     const [appName, appConfig] = (curr || '').split(':');
                     const [appPort = 8003, protocol = 'http'] = appConfig.split('~');
@@ -68,7 +75,6 @@ plugins.push(new webpack.DefinePlugin({
 webpackConfig.resolve.alias = {
     ...webpackConfig.resolve.alias,
     '@react-pdf/renderer': resolve(__dirname, './customPDF'),
-    'html-webpack-plugin': resolve(__dirname, '../node_modules/html-webpack-plugin'),
     reactRedux: resolve(__dirname, '../node_modules/react-redux')
 };
 
@@ -81,6 +87,8 @@ webpackConfig.module.rules = [
         }
     }
 ];
+
+webpackConfig.devServer.client.overlay = false;
 
 module.exports = {
     ...webpackConfig,
